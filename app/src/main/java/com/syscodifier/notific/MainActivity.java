@@ -11,29 +11,45 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.messaging.FirebaseMessaging;
+
 
 public class MainActivity extends AppCompatActivity {
 
     Button notifyBtn;
-    TextView textView;
+//    TextView textView;
+    private FirebaseAuth mAuth;
 
-    private static final String CHANNEL_ID = "tester";
-    private static final String CHANNEL_NAME = "Tester";
-    private static final String CHANNEL_DEC = "Tester Notify";
+    public static final String CHANNEL_ID = "tester";
+    public static final String CHANNEL_NAME = "Tester";
+    public static final String CHANNEL_DEC = "Tester Notify";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        FirebaseMessaging.getInstance().subscribeToTopic("update");
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null){
+            Intent intent = new Intent(getApplicationContext(), SignUpActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        }
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
@@ -44,30 +60,23 @@ public class MainActivity extends AppCompatActivity {
             manager.createNotificationChannel(channel);
         }
 
-        textView = findViewById(R.id.tokenText);
-        FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
-            @Override
-            public void onComplete(@NonNull Task<InstanceIdResult> task) {
-                if (task.isSuccessful()){
-                    String token = task.getResult().getToken();
-                    textView.setText(token);
-                } else {
-                    textView.setText("Unsuccessful");
-                }
-            }
-        });
+//        textView = findViewById(R.id.tokenText);
+
 
         notifyBtn = findViewById(R.id.NotifyBtn);
         notifyBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Toast.makeText(getApplicationContext(), "Btn pressed", Toast.LENGTH_LONG).show();
-                mNotificationBuilder();
+                //mNotificationBuilder("Send data");
+                NotificationHelper.displayNotificationHelper(getApplicationContext(), "hey", "Yahoo");
+
+
             }
         });
     }
 
-    public void mNotificationBuilder(){
+    public void mNotificationBuilder(String send_data){
 
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
 
@@ -81,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         NotificationCompat.Builder mnotification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.notification_ico_background)
                 .setContentTitle("Woohoo")
-                .setContentText("Success Notification")
+                .setContentText(send_data)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
